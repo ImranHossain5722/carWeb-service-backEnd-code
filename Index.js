@@ -4,6 +4,7 @@ const cors = require('cors')
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
+const  jwt = require('jsonwebtoken');
 //middleware
 app.use(cors());
 app.use(express.json());
@@ -18,7 +19,19 @@ async function run (){
         await client.connect();
 
         const serviceCollection = client.db('car').collection('service')
+        const  orderCollection = client.db('car').collection('order')
         
+        // Auth
+        app.post ('/login', async(req, res)=>{
+            const user =req.body
+            const accessToken =jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,{
+                expiresIn: '1d'
+            })
+            res.send({accessToken})
+
+        })
+
+        // service Api
         app.get('/service',async (req,res)=>{
 
         const query = {};
@@ -42,7 +55,7 @@ async function run (){
 
         })
 
-
+            // service delete
         app.delete('/service/:id', async (req,res)=>{
             const id =req.params.id
             const query = { _id: ObjectId(id)}
@@ -52,6 +65,25 @@ async function run (){
 
         })
 
+
+        //order Collection Api
+        app.post ('/order', async (req,res)=> {
+
+            const order =req.body
+            const result= await orderCollection.insertOne(order)
+             res.send(result)
+
+        })
+
+        // order show 
+        app.get('/order', async(req, res) =>{
+            const email = req.query.email;
+            const query ={email:email}
+            const cursor = orderCollection.find(query)
+            const orders = await cursor.toArray()
+            res.send (orders)
+
+        })
 
 
     }
@@ -69,9 +101,6 @@ app.get('/', (req,res) => {
 })
 
 
-
-
-okay
 
 
 app.listen(port,()=>{
